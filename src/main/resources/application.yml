@@ -13,6 +13,6 @@ spring:
 #        show_sql: true     ##system.out
         format_sql: true    # logger 이용
 
-logging.level:
-  org.hibernate.SQL: debug
+#logging.level:
+#  org.hibernate.SQL: debug
 #  org.hibernate.type: trace     # 실행된 쿼리에서 binding parameter 를 보여줌 -> 별도의 라인에서 보여주기 때문에 좀 불편함
