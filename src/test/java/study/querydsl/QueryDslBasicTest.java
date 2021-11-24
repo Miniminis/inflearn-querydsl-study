@@ -9,9 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.querydsl.entities.Member;
+import study.querydsl.entities.QMember;
 import study.querydsl.entities.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 import javax.transaction.Transactional;
 import java.util.List;
 
@@ -269,9 +272,43 @@ public class QueryDslBasicTest {
         for (Tuple f : fetch) {
             System.out.println(f);
         }
+    }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    @Test
+    @DisplayName("페치 조인이 없을 때")
+    void fetchJoinNo() {
+        em.flush();
+        em.clear();
+
+        Member selectedMember = jpaQueryFactory
+                .selectFrom(member)
+                .where(QMember.member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(selectedMember.getTeam());
+        assertThat(loaded).as("페치조인 미적용").isFalse();
 
     }
 
+    @Test
+    @DisplayName("페치 조인 사용할 때")
+    void fetchJoin() {
+        em.flush();
+        em.clear();
+
+        Member selectedMember = jpaQueryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()            //연관관계에 있는 것까지 한번에 조인함
+                .where(QMember.member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(selectedMember.getTeam());
+        assertThat(loaded).as("페치조인 미적용").isTrue();
+
+    }
 
 
 }
