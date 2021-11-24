@@ -22,7 +22,6 @@ class MemberTest {
 //    @PersistenceContext
     EntityManager em;
 
-
     @Test
     void 엔티티_생성() {
         Team teamA = new Team("TEAM A");

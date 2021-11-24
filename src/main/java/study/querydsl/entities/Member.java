@@ -22,6 +22,11 @@ public class Member {
     @JoinColumn(name = "team_id")       //연관관계 주인. member에서만 team의 외래키값을 변경할 수 있다. team에서는 읽기만 가능
     private Team team;
 
+    public Member(String username, int age) {
+        this.username = username;
+        this.age = age;
+    }
+
     public Member(String username, int age, Team team) {
         this.username = username;
         this.age = age;
