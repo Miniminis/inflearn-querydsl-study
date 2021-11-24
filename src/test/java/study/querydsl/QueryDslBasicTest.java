@@ -4,6 +4,7 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -163,4 +164,114 @@ public class QueryDslBasicTest {
         assertThat(teamA.get(team.name)).isEqualTo("TEAM A");
         assertThat(teamA.get(member.age.avg())).isEqualTo(15);
     }
+
+    /**
+     * TEAM A 에 소속된 모든 회원을 조회하기
+     * */
+    @Test
+    void 기본조인() {
+        List<Member> teamA = jpaQueryFactory.selectFrom(member)
+                .join(member.team, team)
+                .where(team.name.eq("TEAM A"))
+                .fetch();
+
+        assertThat(teamA)
+                .extracting("username")
+                .containsExactly("member1", "member2");
+    }
+
+    @Test
+    @DisplayName("연관관계가 없는 두 테이블을 조인하기")
+    void 세타조인() {
+        em.persist(new Member("TEAM A", 150));
+        em.persist(new Member("TEAM B", 160));
+
+        List<Member> fetch = jpaQueryFactory
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+
+        assertThat(fetch)
+                .extracting("username")
+                .containsExactly("TEAM A", "TEAM B");
+    }
+
+    /** 이점
+     * 1. 조인대상 필터링
+     * 2. 연관관계 없는 엔티티 외부 조인
+     *
+     * 예시
+     * - 회원과 팀을 조인
+     * - 팀이름이 TEAM A 인 팀만 조인, 회원은 모두 조회
+     ** */
+    @Test
+    void 조인_ON절_조인대상_필터링() {
+        List<Tuple> teamA = jpaQueryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team)
+                .on(team.name.eq("TEAM A"))
+                .fetch();
+
+        for (Tuple info : teamA) {
+            System.out.println("teamA : " + info);
+        }
+    }
+
+
+    /**
+     * inner join 인 경우는 where 절을 쓰나, On 절을 쓰나 결과가 같아진다.
+     * - 이 경우는 익숙한 where 절을 쓰고,
+     * - left join 인 경우만 on 절을 쓰는것이 의미가 있다.
+     * */
+    @Test
+    void 내부조인_ON절_조인대상_필터링() {
+        List<Tuple> teamA = jpaQueryFactory
+                .select(member, team)
+                .from(member)
+                .join(member.team, team)
+                .where(team.name.eq("TEAM A"))
+                .fetch();
+
+        List<Tuple> teamB = jpaQueryFactory
+                .select(member, team)
+                .from(member)
+                .join(member.team, team)
+                .on(team.name.eq("TEAM A"))
+                .fetch();
+
+        assertThat(teamA).isEqualTo(teamB);
+
+        for (Tuple info : teamA) {
+            System.out.println("teamA : " + info);
+        }
+
+        for (Tuple info : teamB) {
+            System.out.println("teamB : " + info);
+        }
+    }
+
+    @Test
+    @DisplayName("연관관계가 없는 두 엔티티 외부 조인하기, 회원의 이름이 팀 이름과 같은 대상 외부 조인")
+    void joinTablesWithOnRelation() {
+        em.persist(new Member("TEAM A", 150));
+        em.persist(new Member("TEAM B", 160));
+        em.persist(new Member("TEAM C", 170));
+
+        List<Tuple> fetch = jpaQueryFactory
+                .select(member, team)
+                .from(member)
+//                .leftJoin(member.team, team).on(member.username.eq(team.name))  //id matching 포함
+                .leftJoin(team).on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple f : fetch) {
+            System.out.println(f);
+        }
+
+    }
+
+
+
 }
