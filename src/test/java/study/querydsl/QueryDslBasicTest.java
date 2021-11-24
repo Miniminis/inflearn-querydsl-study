@@ -1,23 +1,22 @@
 package study.querydsl;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.querydsl.entities.Member;
-import static study.querydsl.entities.QMember.member;
-
-import study.querydsl.entities.QTeam;
 import study.querydsl.entities.Team;
 
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
-
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static study.querydsl.entities.QMember.member;
+import static study.querydsl.entities.QTeam.team;
 
 @SpringBootTest
 @Transactional
@@ -79,7 +78,9 @@ public class QueryDslBasicTest {
                 .selectFrom(member)
                 .limit(4)
                 .offset(2)
-                .fetchResults();
+                .fetchResults();        // 같은 쿼리에 fetch, fetchCount 정도만 다르게 붙기 때문에,
+                                        // count 쿼리에 join 이나 조건절을 줄일 수 있다면
+                                        // 성능상 이슈로 count 쿼리를 별도로 분리하는 것이 좋다.
 
         long total = memberQueryResults.getTotal();
         long limit = memberQueryResults.getLimit();
@@ -122,5 +123,44 @@ public class QueryDslBasicTest {
         assertThat(member6.getUsername()).isEqualTo("member6");
         assertThat(member5.getUsername()).isEqualTo("member5");
         assertThat(memberNull.getUsername()).isNull();
+    }
+
+    @Test
+    void 팀의이름과_각팀의평균연령_구하기() {
+        List<Tuple> fetch = jpaQueryFactory
+                .select(team.name, member.age.avg())
+                .from(member)
+                .leftJoin(member.team, team)
+                .groupBy(team.name)
+                .fetch();
+
+        assertThat(fetch.size()).isEqualTo(2);
+
+        Tuple teamA = fetch.get(0);
+        Tuple teamB = fetch.get(1);
+
+        assertThat(teamA.get(team.name)).isEqualTo("TEAM A");
+        assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+
+        assertThat(teamB.get(team.name)).isEqualTo("TEAM B");
+        assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+    }
+
+    @Test
+    void 팀의이름과_각팀의평균연령_구하기_HAVING() {
+        List<Tuple> fetch = jpaQueryFactory
+                .select(team.name, member.age.avg())
+                .from(member)
+                .leftJoin(member.team, team)
+                .groupBy(team.name)
+                .having(team.name.like("%TEAM A%"))
+                .fetch();
+
+        assertThat(fetch.size()).isEqualTo(1);
+
+        Tuple teamA = fetch.get(0);
+
+        assertThat(teamA.get(team.name)).isEqualTo("TEAM A");
+        assertThat(teamA.get(member.age.avg())).isEqualTo(15);
     }
 }
