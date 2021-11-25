@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -403,6 +404,26 @@ public class QueryDslBasicTest {
                         .when(member.age.between(21, 30)).then("21 ~ 30살")
                         .otherwise("기타")
                 )
+                .from(member)
+                .fetch();
+
+        fetch.forEach(System.out::println);
+    }
+
+    @Test
+    @DisplayName("상수")
+    void constant() {
+        List<Tuple> fetch = jpaQueryFactory.select(member.username, Expressions.constant("Hello~"))
+                .from(member)
+                .fetch();
+
+        fetch.forEach(System.out::println);
+    }
+
+    @Test
+    @DisplayName("문자열 더하기, EnumType 같은 경우 내부에 값이 없기 때문에 string value 로 전환하여 사용하면 된다.")
+    void concat() {
+        List<String> fetch = jpaQueryFactory.select(member.username.concat("_").concat(member.age.stringValue()))
                 .from(member)
                 .fetch();
 
