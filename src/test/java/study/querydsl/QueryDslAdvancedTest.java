@@ -5,6 +5,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -201,4 +202,34 @@ public class QueryDslAdvancedTest {
                 .where(builder)
                 .fetch();
     }
+
+    @Test
+    void where다중파라미터사용() {
+        String userName = "member1";
+        Integer userAge = null;
+
+        List<Member> members = searchMember2(userName, userAge);
+        members.stream().forEach(System.out::println);
+    }
+
+    private List<Member> searchMember2(String userName, Integer userAge) {
+        return jpaQueryFactory
+                .selectFrom(member)
+                .where(eqAll(userName, userAge))
+                .fetch();
+    }
+
+    //조립해서 사용할 수 있다...!!!
+    private BooleanExpression eqAll(String userName, Integer userAge) {
+        return eqUserName(userName).and(eqUserAge(userAge));
+    }
+
+    private BooleanExpression eqUserAge(Integer userAge) {
+        return userAge != null ? member.age.eq(userAge) : null;
+    }
+
+    private BooleanExpression eqUserName(String userName) {
+        return userName != null ? member.username.eq(userName) : null;
+    }
+
 }
