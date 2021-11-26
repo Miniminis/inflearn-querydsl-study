@@ -1,7 +1,9 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -174,4 +176,29 @@ public class QueryDslAdvancedTest {
         fetch.forEach(System.out::println);
     }
 
+    @Test
+    void booleanBuilderSearch1() {
+
+        String userName = "member1";
+        Integer userAge = null;
+
+        List<Member> members = searchMember1(userName, userAge);
+        members.stream().forEach(System.out::println);
+    }
+
+    private List<Member> searchMember1(String userName, Integer userAge) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (userName != null) {
+            builder.and(member.username.eq(userName));
+        }
+
+        if (userAge != null) {
+            builder.and(member.age.eq(userAge));
+        }
+
+        return jpaQueryFactory.selectFrom(member)
+                .where(builder)
+                .fetch();
+    }
 }
