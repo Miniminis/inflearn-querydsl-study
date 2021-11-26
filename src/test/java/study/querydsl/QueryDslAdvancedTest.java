@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
@@ -232,4 +233,49 @@ public class QueryDslAdvancedTest {
         return userName != null ? member.username.eq(userName) : null;
     }
 
+    @Test
+    void 쿼리한번으로_대량데이터_수정() {
+        long rowNum = jpaQueryFactory.update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        //member1, member 2 -> 비회원
+        //member3, member4 -> 변경없음
+
+        System.out.println("rowNum = " + rowNum);
+
+        em.flush();
+        em.clear();
+
+        //조심해야할 것!
+        //영속성 context 와 db 데이터 사이의 싱크가 안맞을 수 있다.
+        //영속성 context 에서는 아직 member1 인데, db에서는 비회원으로 바뀌었다.
+        //bulk 연산은 영속성 컨텍스트, 1차캐시 무시하고 바로 DB 로 접근하여 데이터를 바꿔버린다.
+
+        //JPA 는 기본적으로 영속성컨택스트를 우선적으로 반영하고, 값이 없을 경우에만 DB 데이터를 반영한다.
+
+        List<Member> fetch = jpaQueryFactory.selectFrom(member)
+                .fetch();
+
+        fetch.stream().forEach(System.out::println);
+    }
+
+    @Test
+    void bulkAdd() {
+        long rowNum = jpaQueryFactory.update(member)
+                .set(member.age, member.age.add(1))     //minus, multiply
+                .execute();
+
+        System.out.println("rowNum = " + rowNum);
+    }
+
+    @Test
+    void bulkDelete() {
+        long execute = jpaQueryFactory.delete(member)
+                .where(member.age.lt(20))
+                .execute();
+
+        System.out.println("execute = " + execute);
+    }
 }
