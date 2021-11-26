@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entities.Member;
 import study.querydsl.entities.QMember;
@@ -129,7 +130,7 @@ public class QueryDslAdvancedTest {
     @DisplayName("QueryDsl 에서 DTO 타입으로 원하는 컬럼만 결과 받기 > constructor")
     void returnDtoQueryDslConstructor() {
 
-        //필수사항 : @AllArgsConstructor + @QueryProjection
+        //필수사항 : @AllArgsConstructor
         List<MemberDto> fetch = jpaQueryFactory
                 .select(Projections.constructor(MemberDto.class,
                         member.username,
@@ -155,6 +156,19 @@ public class QueryDslAdvancedTest {
                             .from(memberSub), "userDtoAge")
                 ))
                 .from(QMember.member)
+                .fetch();
+
+        fetch.forEach(System.out::println);
+    }
+
+    @Test
+    @DisplayName("ConstructorQueryProjection")
+    void returnDtoQueryDslConstructorQueryProjection() {
+
+        //필수사항 : @AllArgsConstructor + @QueryProjection
+        List<MemberDto> fetch = jpaQueryFactory
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
                 .fetch();
 
         fetch.forEach(System.out::println);
